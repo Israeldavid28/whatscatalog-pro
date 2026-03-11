@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 
-export type EventType = 'vista_producto' | 'add_cart' | 'inicio_checkout' | 'pedido_whatsapp';
+export type EventType = 'vista_producto' | 'add_cart' | 'inicio_checkout' | 'pedido_whatsapp' | 'vista_catalogo';
 
 export async function trackEvent(tenantId: string, tipo: EventType, productoId?: string, metadata: any = {}) {
   try {

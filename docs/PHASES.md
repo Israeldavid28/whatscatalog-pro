@@ -34,9 +34,10 @@ SaaS para gestión de catálogos digitales por WhatsApp. Permite a los negocios 
 - Configuración del tenant, métodos de pago y opciones de entrega. ✅
 
 ### 📈 Fase 2: Escalabilidad (Semanas 5-8) [PENDIENTE]
-- Dominios personalizados/subdominios.
-- Dashboard de Analytics (vistas, conversiones).
-- Historial y movimientos de inventario detallados (Cargos/Descargos auditables).
+- [x] Dominios personalizados/subdominios (Base implementada con middleware).
+- [x] Dashboard de Analytics avanzado (Vistas, Carrito, Conversión) con Recharts.
+- [ ] Exportación de reportes (PDF/Excel).
+- [ ] Historial y movimientos de inventario detallados (Cargos/Descargos auditables).
 - Optimización avanzada de rendimiento e imágenes.
 
 ### 🤖 Fase 3: Diferenciación y AI (Semanas 9-12) [PENDIENTE]

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Search, ShoppingCart, Info, Loader2 } from "lucide-react"
 
 import { Product, Category, Tenant } from "@/types/database"
@@ -28,6 +28,10 @@ export default function PublicCatalog({ tenant, products, categories }: CatalogP
   const cartItems = useCartStore((s) => s.items)
   const totalItems = useCartStore((s) => s.totalItems())
   const totalPrice = useCartStore((s) => s.totalPrice())
+
+  useEffect(() => {
+    trackEvent(tenant.id, "vista_catalogo")
+  }, [tenant.id])
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {

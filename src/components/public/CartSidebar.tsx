@@ -117,22 +117,18 @@ export default function CartSidebar({ tenant, open, onOpenChange }: CartSidebarP
        if (detailsError) throw detailsError
 
        // 3. Register Event (Analytics)
-       await supabase.from("eventos_catalogo").insert({
-          tenant_id: tenant.id,
-          tipo_evento: "pedido_whatsapp",
-          metadata: { order_id: order.id, total: grandTotal }
-       })
+       trackEvent(tenant.id, "pedido_whatsapp", undefined, { order_id: order.id, total: grandTotal })
 
        // 4. Generate WhatsApp Message
        const message = generateWhatsAppMessage(order, items, selectedDelivery, selectedPayment)
        const encodedMessage = encodeURIComponent(message)
-       const waUrl = `https://wa.me/${settings.whatsapp_number?.replace(/\D/g, '')}?text=${encodedMessage}`
+       const whatsappUrl = `https://wa.me/${tenant.phone?.replace(/\D/g, "")}?text=${encodedMessage}`
 
        // 5. Success Flow
        clearCart()
        onOpenChange(false)
        setStep("cart")
-       window.open(waUrl, '_blank')
+       window.open(whatsappUrl, '_blank')
      } catch (error) {
         console.error("Error sending order:", error)
         alert("Ocurrió un error al procesar el pedido.")
