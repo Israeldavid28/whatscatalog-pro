@@ -8,7 +8,9 @@ import {
   Tags, 
   ArrowLeftRight, 
   Settings, 
-  ExternalLink 
+  ExternalLink,
+  ShoppingCart,
+  BarChart3
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -18,6 +20,8 @@ const navigation = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Productos", href: "/admin/productos", icon: Package },
   { name: "Categorías", href: "/admin/categorias", icon: Tags },
+  { name: "Pedidos", href: "/admin/pedidos", icon: ShoppingCart },
+  { name: "Estadísticas", href: "/admin/analytics", icon: BarChart3 },
   { name: "Inventario", href: "/admin/movimientos", icon: ArrowLeftRight },
   { name: "Configuración", href: "/admin/configuracion", icon: Settings },
 ]
