@@ -1,0 +1,1037 @@
+ Voy a analizar el documento que compartiste para entender la estructura y el estilo del informe, y luego te crearé un PRD (Product Requirements Document) profesional para tu SaaS de catálogo de ventas por WhatsApp.
+
+Primero, déjame revisar el sitio de referencia que mencionaste para entender mejor el modelo de negocio:  
+ Excelente. Ya tengo toda la información necesaria. Ahora crearé un PRD profesional siguiendo la estructura y estilo del documento de GenteFarma que compartiste, adaptado perfectamente a tu SaaS de catálogo de ventas por WhatsApp.
+
+---
+
+# PRD: Catálogo Digital WhatsApp Commerce SaaS
+
+**Producto:** WhatsCatalog Pro  
+**Tecnologías Clave:** Next.js 14, Supabase (Auth + PostgreSQL + Storage), Tailwind CSS, shadcn/ui, WhatsApp API (wa.me links)
+
+---
+
+## 1. Visión del Producto
+
+Transformar la gestión de inventario y ventas informales en una experiencia digital profesional y sin fricción. WhatsCatalog Pro permite a pequeños y medianos comerciantes crear catálogos digitales elegantes en minutos, gestionar su inventario inteligentemente y recibir pedidos directamente por WhatsApp sin necesidad de desarrollar una tienda online compleja ni pagar comisiones por venta.
+
+El producto actúa como el puente perfecto entre el control de stock empresarial y la simplicidad de las ventas por WhatsApp que ya dominan los comerciantes latinoamericanos.
+
+---
+
+## 2. Perfiles de Usuario (Personas)
+
+### 2.1 Vendedor (Cliente SaaS) - "Carlos"
+- **Edad:** 35 años, dueño de una ferretería mediana
+- **Dolor:** Pierde ventas porque no puede mostrar su inventario completo por WhatsApp. Se pierde entre fotos desorganizadas en su galería.
+- **Necesidad:** Un lugar centralizado para subir productos, ver su stock disponible y compartir un enlace profesional con clientes.
+- **Comportamiento:** Accede principalmente desde laptop para gestionar productos, pero necesita consultar stock desde el celular.
+
+### 2.2 Comprador (Cliente Final) - "Mariana"
+- **Edad:** 28 años, busca comprar materiales para remodelar su casa
+- **Contexto:** Encuentra el negocio de Carlos por Instagram. Quiere ver precios antes de escribir por WhatsApp.
+- **Necesidad:** Navegar rápidamente por categorías, ver fotos claras de productos y poder "armar" su pedido antes de contactar al vendedor.
+- **Frustración:** Odia tener que escribir "¿Tienes disponible...?" para cada producto que le interesa.
+
+---
+
+## 3. Requerimientos Funcionales (Core)
+
+### 3.1 Módulo de Autenticación y Onboarding (Supabase Auth)
+
+**Flujo de Registro/Inicio de Sesión:**
+- **Email/Password:** Registro tradicional con confirmación por correo
+- **OAuth Google:** Botón "Continuar con Google" para registro instantáneo
+- **Onboarding obligatorio post-registro:**
+  - Nombre del negocio
+  - Número de WhatsApp comercial (validado con código de país)
+  - Moneda base (USD, EUR, MXN, COP, ARS, etc.)
+  - Logo del negocio (opcional en este paso)
+
+**Especificaciones Técnicas:**
+- Row Level Security (RLS) activado en todas las tablas
+- Políticas de acceso: Usuarios solo ven datos de su `tenant_id`
+- Sesiones persistentes con refresh token automático
+
+### 3.2 Dashboard y Panel de Administración
+
+**Estructura del Layout:**
+```
+┌─────────────────────────────────────┐
+│  Sidebar Navigation                 │
+│  ├── Dashboard (Resumen)            │
+│  ├── Productos (CRUD + Inventario)  │
+│  ├── Categorías                     │
+│  ├── Movimientos (Cargos/Descargos) │
+│  ├── Configuración                  │
+│  └── Ver Catálogo Público [Button]  │
+└─────────────────────────────────────┘
+```
+
+**3.2.1 Gestión de Productos (Inventario)**
+
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `nombre` | String | Sí | Nombre comercial del producto |
+| `descripcion` | Text | No | Detalles técnicos o comerciales |
+| `precio` | Decimal | Sí | Precio de venta (moneda del negocio) |
+| `stock` | Integer | Sí | Cantidad disponible actual |
+| `stock_minimo` | Integer | No | Alerta cuando stock < mínimo |
+| `categoria_id` | UUID | Sí | Relación con tabla categorías |
+| `imagen_principal` | URL | Sí | Imagen destacada (Supabase Storage) |
+| `imagenes_adicionales` | Array[URL] | No | Galería de hasta 4 imágenes extra |
+| `sku` | String | No | Código interno de referencia |
+| `estado` | Enum | Sí | `activo` / `inactivo` / `agotado` |
+
+**Funcionalidades:**
+- **Búsqueda instantánea:** Filtrado por nombre, SKU o categoría
+- **Gestión de stock inteligente:**
+  - **Cargos:** Aumento de inventario (compras a proveedores, devoluciones)
+  - **Descargos:** Disminución (ventas, mermas, ajustes)
+  - **Historial completo:** Quién, cuándo y por qué cambió el stock
+- **Alertas visuales:** Badge "Stock Bajo" cuando `stock <= stock_minimo`
+- **Bulk actions:** Selección múltiple para activar/desactivar o cambiar categoría
+
+**3.2.2 Gestión de Categorías**
+
+- CRUD completo con iconos (usando Lucide React)
+- Drag & drop para ordenar categorías (prioridad de visualización)
+- Cada producto pertenece a una única categoría
+- Categorías pueden marcarse como "Destacada" (aparece primero en el catálogo)
+
+**3.2.3 Configuración del Negocio**
+
+**Ajustes Generales:**
+- Nombre del negocio
+- Descripción corta (para SEO/meta tags)
+- Número de WhatsApp (formato internacional: +58 412 1234567)
+- Moneda predeterminada
+- Zona horaria (para timestamps correctos)
+
+**Personalización Visual:**
+- Color primario (selector con previsualización en tiempo real)
+- Color secundario/acento
+- Logo (optimización automática a múltiples tamaños)
+- Banner superior opcional (imagen promocional)
+- Favicon personalizado
+
+**Configuración de Pedidos:**
+- Mensaje de bienvenida personalizado para WhatsApp
+- Horario de atención (mostrar "Abierto/Cerrado" en catálogo)
+- Costo de delivery (si aplica)
+- Zonas de cobertura para delivery
+
+### 3.3 Catálogo Público (Vista Cliente Final)
+
+**Arquitectura de URLs:**
+- Cada negocio tiene subdominio único: `negocio.whatscatalog.app`
+- O dominio personalizado (configuración DNS en plan Pro)
+
+**Estructura de la Interfaz:**
+
+```
+┌─────────────────────────────────────┐
+│  Header: Logo + Nombre Negocio      │
+│  Search Bar (Sticky)                │
+│  Categorías (Scroll Horizontal)     │
+├─────────────────────────────────────┤
+│                                     │
+│  [Card Producto] [Card Producto]    │
+│  [Card Producto] [Card Producto]    │
+│  (Grid Responsive: 2 cols móvil)    │
+│                                     │
+├─────────────────────────────────────┤
+│  Floating Cart Button (si items>0)  │
+└─────────────────────────────────────┘
+```
+
+**Card de Producto:**
+- Imagen principal (lazy loading, placeholder blur)
+- Nombre del producto (2 líneas máximo, ellipsis)
+- Precio formateado (ej: $ 25.000,00)
+- Badge "Agotado" si `stock = 0` (deshabilita clic)
+- Efecto hover: ligero scale + sombra
+
+**Filtros y Búsqueda:**
+- **Búsqueda por nombre:** Debounce de 300ms, búsqueda instantánea
+- **Filtro por categoría:** Tabs scrollables, "Todos" por defecto
+- **Ordenamiento:** Por defecto (orden del admin), Precio ↑, Precio ↓, Nombre A-Z
+
+**Modal de Producto (Detalle):**
+- Carrusel de imágenes (si hay múltiples)
+- Nombre completo
+- Precio destacado
+- Descripción completa
+- Selector de cantidad (input numérico con +/-)
+- Botón "Añadir al Carrito"
+- Indicador de stock disponible ("Quedan 5 unidades")
+
+### 3.4 Sistema de Carrito y Checkout WhatsApp
+
+**Lógica del Carrito (Cliente-Side):**
+- Persistencia en `localStorage` (no requiere registro del comprador)
+- Estructura: `[{producto_id, cantidad, nombre, precio_unitario, imagen}]`
+- Sincronización entre pestañas (BroadcastChannel API)
+- Badge en botón flotante con cantidad total de items
+
+**Flujo de Pedido:**
+
+**Paso 1: Revisión del Carrito**
+- Lista de productos con miniaturas
+- Cantidad editable por producto
+- Botón eliminar (icono trash)
+- Subtotal calculado automáticamente
+- Botón "Continuar con el Pedido"
+
+**Paso 2: Formulario de Datos (Modal/Drawer)**
+
+| Campo | Tipo | Validación | Requerido |
+|-------|------|------------|-----------|
+| Nombre completo | Text | Mínimo 3 caracteres | Sí |
+| Teléfono | Tel | Formato válido por país | Sí |
+| Dirección | Textarea | Mínimo 10 caracteres | Sí |
+| Método de Pago | Radio Cards | Solo una selección | Sí |
+| Método de Entrega | Radio Cards | Delivery o Pickup | Sí |
+| Notas adicionales | Textarea | Opcional | No |
+
+**Métodos de Pago (Tarjetas Option Button):**
+- 💳 Transferencia bancaria
+- 📱 Pago móvil / PSE / Mercado Pago (según país)
+- 💵 Efectivo / Divisas
+- (Personalizable por el vendedor en configuración)
+
+**Métodos de Entrega:**
+- 🏠 Delivery (muestra costo si aplica)
+- 🏪 Pickup / Retiro en tienda (muestra dirección del negocio)
+
+**Validaciones en Tiempo Real:**
+- Campos con borde rojo si son inválidos
+- Botón "Enviar Pedido por WhatsApp" deshabilitado hasta validación completa
+- Mensajes de error específicos por campo
+
+**Paso 3: Generación de Mensaje WhatsApp**
+
+**Plantilla dinámica generada:**
+
+```
+¡Hola! 👋 Soy *{nombre_cliente}* y quiero hacer un pedido:
+
+📦 *PRODUCTOS:*
+{lista_productos_con_precios}
+
+💰 *TOTAL: ${monto_total}*
+
+📍 *ENTREGA:* {metodo_entrega}
+📱 *TELÉFONO:* {telefono}
+🏠 *DIRECCIÓN:* {direccion}
+
+💳 *MÉTODO DE PAGO:* {metodo_pago}
+📝 *NOTAS:* {notas_opcionales}
+
+¿Está disponible todo para confirmar mi pedido? Gracias! 🙏
+```
+
+**Acción Final:**
+- URL encode del mensaje
+- Redirección a: `https://wa.me/{numero_negocio}?text={mensaje_encoded}`
+- Apertura en nueva pestaña (target="_blank")
+- Limpieza automática del carrito post-redirección
+
+---
+
+## 4. Funcionalidades "Inolvidables" (Bonus)
+
+Para diferenciar WhatsCatalog Pro de competidores básicos:
+
+### 4.1 Modo "Escáner Rápido" para Vendedores
+- Acceso desde móvil: Usar cámara para "escanear" productos físicos
+- GPT-4 Vision sugiere nombre y categoría basado en la imagen
+- Solo el vendedor confirma precio y stock
+- Reduce tiempo de carga de inventario inicial en 70%
+
+### 4.2 Analytics de Conversión
+- Heatmap de productos más vistos (vista previa en dashboard)
+- Tasa de conversión: Vistas del catálogo vs. clicks a WhatsApp
+- Productos más añadidos al carrito pero no pedidos (abandono)
+- Horarios pico de visitas (para optimizar atención)
+
+### 4.3 Modo "Catálogo Express"
+- Para vendedores sin tiempo: Sube una foto de tu lista de precios escrita
+- OCR + IA extrae automáticamente: Nombre, precio, categoría sugerida
+- Review rápido y publicación en 2 minutos
+
+### 4.4 Recordatorios Inteligentes de Stock
+- Notificación WhatsApp al vendedor cuando un producto está agotado
+- Sugerencia de reposición basada en velocidad de venta histórica
+- "Este producto se agota cada 5 días, considera comprar 20 unidades"
+
+### 4.5 Multi-idioma Automático
+- Detección de idioma del navegador del comprador
+- Catálogo se traduce automáticamente (español, inglés, portugués)
+- Mensaje de WhatsApp se genera en idioma del comprador
+
+---
+
+## 5. Especificaciones Técnicas para el Ingeniero
+
+### Stack Tecnológico Sugerido:
+
+| Capa | Tecnología | Justificación |
+|------|------------|---------------|
+| **Frontend** | Next.js 14 (App Router) | SSR para SEO, rutas dinámicas por tenant |
+| **Estilos** | Tailwind CSS + shadcn/ui | Desarrollo rápido, consistencia UI |
+| **Backend/DB** | Supabase | Auth, PostgreSQL, Storage, RLS integrado |
+| **Estado Global** | Zustand | Ligero, persistencia fácil |
+| **Imágenes** | Supabase Storage + Sharp | Optimización automática, CDN |
+| **Formularios** | React Hook Form + Zod | Validación type-safe |
+| **Notificaciones** | Sonner | Toast notifications elegantes |
+
+### Esquema de Base de Datos (PostgreSQL):
+
+```sql
+-- Tenants (Negocios)
+CREATE TABLE tenants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre_negocio VARCHAR(255) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL, -- para subdominio
+    whatsapp VARCHAR(20) NOT NULL,
+    moneda VARCHAR(3) DEFAULT 'USD',
+    color_primario VARCHAR(7) DEFAULT '#3B82F6',
+    color_secundario VARCHAR(7) DEFAULT '#10B981',
+    logo_url TEXT,
+    banner_url TEXT,
+    mensaje_bienvenida TEXT,
+    costo_delivery DECIMAL(10,2) DEFAULT 0,
+    activo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Usuarios (Vendedores/Admins)
+CREATE TABLE profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id),
+    tenant_id UUID REFERENCES tenants(id),
+    nombre VARCHAR(100),
+    rol VARCHAR(20) DEFAULT 'admin', -- admin, vendedor
+    avatar_url TEXT
+);
+
+-- Categorías
+CREATE TABLE categorias (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID REFERENCES tenants(id),
+    nombre VARCHAR(100) NOT NULL,
+    icono VARCHAR(50),
+    orden INTEGER DEFAULT 0,
+    destacada BOOLEAN DEFAULT false
+);
+
+-- Productos
+CREATE TABLE productos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID REFERENCES tenants(id),
+    categoria_id UUID REFERENCES categorias(id),
+    nombre VARCHAR(255) NOT NULL,
+    descripcion TEXT,
+    precio DECIMAL(10,2) NOT NULL,
+    stock INTEGER DEFAULT 0,
+    stock_minimo INTEGER DEFAULT 5,
+    sku VARCHAR(100),
+    imagen_principal TEXT,
+    imagenes_adicionales JSONB DEFAULT '[]',
+    estado VARCHAR(20) DEFAULT 'activo', -- activo, inactivo, agotado
+    vistas INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Movimientos de Inventario (Auditoría)
+CREATE TABLE movimientos_stock (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    producto_id UUID REFERENCES productos(id),
+    tenant_id UUID REFERENCES tenants(id),
+    tipo VARCHAR(20), -- entrada, salida, ajuste
+    cantidad INTEGER NOT NULL,
+    stock_anterior INTEGER,
+    stock_nuevo INTEGER,
+    motivo TEXT,
+    usuario_id UUID REFERENCES profiles(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Diagrama de Flujo Lógico:
+
+```
+1. [Tenant Detection]
+   ↓ Middleware detecta subdominio/dominio
+   ↓ Busca tenant_id en DB
+   ↓ Inyecta contexto en request
+
+2. [Catálogo Público]
+   ↓ Fetch productos WHERE tenant_id = X AND estado = 'activo'
+   ↓ Agrupa por categorías ordenadas
+   ↓ Render SSR con metadatos dinámicos (Open Graph)
+
+3. [Interacción Producto]
+   ↓ Click → Modal con detalle (Client Component)
+   ↓ Add to Cart → localStorage + Zustand
+   ↓ Cart persistido entre sesiones
+
+4. [Checkout]
+   ↓ Validación formulario (Zod schema)
+   ↓ Generación mensaje WhatsApp (template engine)
+   ↓ wa.me link con texto prellenado
+   ↓ Redirect + Clear cart
+```
+
+### Arquitectura de Seguridad:
+
+- **RLS Policies:** Cada tabla tiene políticas que filtran por `tenant_id`
+- **Storage:** Buckets separados por tenant, políticas de lectura pública solo para imágenes de productos activos
+- **Rate Limiting:** 100 requests/minuto por IP en catálogo público
+- **Validación:** Todas las inputs validadas con Zod antes de tocar DB
+
+---
+
+## 6. Métricas de Éxito (KPIs)
+
+| Métrica | Objetivo | Cómo Medir |
+|---------|----------|------------|
+| **Tiempo de Setup** | < 5 minutos desde registro hasta catálogo publicado | Analytics de onboarding funnel |
+| **Productos Cargados** | Promedio 20 productos en primeros 7 días | Conteo por tenant en DB |
+| **Tasa de Conversión** | > 15% de visitas al catálogo resultan en click a WhatsApp | Event tracking en botón de pedido |
+| **Tiempo de Respuesta** | < 2 segundos carga inicial del catálogo | Vercel Analytics / Lighthouse |
+| **Retención** | 60% de usuarios activos después de 30 días | Login events en auth logs |
+| **NPS (Vendedores)** | > 50 | Encuesta in-app mensual |
+| **Carrito Abandonado** | < 40% (productos añadidos pero no pedidos) | Diferencia entre add_to_cart vs orders |
+
+---
+
+## 7. Roadmap de Lanzamiento
+
+### Fase 1: MVP (Semanas 1-4)
+- ✅ Auth con Supabase
+- ✅ CRUD Productos básico
+- ✅ Catálogo público responsive
+- ✅ Carrito + WhatsApp integration
+- ✅ Configuración básica del negocio
+
+### Fase 2: Escalabilidad (Semanas 5-8)
+- 🔄 Dominios personalizados
+- 🔄 Analytics dashboard
+- 🔄 Gestión de inventario avanzada (cargos/descargos)
+- 🔄 Optimización de imágenes (WebP, lazy loading)
+
+### Fase 3: Diferenciación (Semanas 9-12)
+- 🚀 Modo Escáner con IA
+- 🚀 Multi-usuarios por negocio (roles)
+- 🚀 Integración pasarela de pagos (mercado pago/stripe)
+- 🚀 App móvil PWA para vendedores
+
+---
+
+## 8. Modelo de Negocio Sugerido
+
+| Plan | Precio | Límites | Features |
+|------|--------|---------|----------|
+| **Free** | $0 | 50 productos, 3 categorías, marca de agua | Básico |
+| **Pro** | $12/mes | 500 productos, categorías ilimitadas, dominio propio | + Analytics, sin marca de agua |
+| **Business** | $29/mes | Ilimitado, multi-usuario (3), soporte prioritario | + IA Escáner, API access |
+
+---
+
+Este PRD establece las bases para un SaaS robusto, escalable y centrado en la experiencia del usuario, manteniendo la simplicidad que caracteriza a las ventas por WhatsApp pero añadiendo la profesionalidad que necesitan los comerciantes para crecer. ¿Te gustaría que profundice en algún módulo específico o que genere los wireframes de alguna pantalla en particular?
+
+
+ Perfecto, actualizaré el PRD con un esquema de base de datos completamente normalizado (1FN, 2FN, 3FN) e integraré el nuevo módulo de configuración de métodos de pago del vendedor.
+
+---
+
+## 5. Especificaciones Técnicas para el Ingeniero (Actualizado)
+
+### 5.1 Esquema de Base de Datos Normalizado (PostgreSQL)
+
+He reestructurado completamente el esquema para eliminar redundancias y dependencias transitivas, aplicando rigurosamente las tres formas normales.
+
+#### **Análisis de Normalización:**
+
+**Primera Forma Normal (1FN):** Todos los atributos contienen valores atómicos indivisibles. No hay grupos repetitivos.
+
+**Segunda Forma Normal (2FN):** Cumple 1FN y todos los atributos no clave dependen completamente de la clave primaria (elimina dependencias parciales).
+
+**Tercera Forma Normal (3FN):** Cumple 2FN y no existen dependencias transitivas (atributos no clave no dependen de otros atributos no clave).
+
+---
+
+#### **Tablas del Esquema:**
+
+```sql
+-- ==========================================
+-- 1. TENANTS (Negocios) - Entidad Principal
+-- ==========================================
+CREATE TABLE tenants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre_negocio VARCHAR(255) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    descripcion TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    activo BOOLEAN DEFAULT true
+);
+
+-- ==========================================
+-- 2. CONFIGURACIONES (Separado de tenants - 3FN)
+-- Atributos que no dependen directamente de la identidad del tenant
+-- ==========================================
+CREATE TABLE configuraciones (
+    tenant_id UUID PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE,
+    
+    -- Identidad visual (pueden cambiar independientemente)
+    logo_url TEXT,
+    banner_url TEXT,
+    favicon_url TEXT,
+    color_primario VARCHAR(7) DEFAULT '#3B82F6',
+    color_secundario VARCHAR(7) DEFAULT '#10B981',
+    
+    -- Configuración regional
+    moneda_codigo VARCHAR(3) DEFAULT 'USD',
+    zona_horaria VARCHAR(50) DEFAULT 'America/Caracas',
+    pais_codigo VARCHAR(2) DEFAULT 'VE',
+    
+    -- Contacto y operación
+    whatsapp_numero VARCHAR(20) NOT NULL,
+    email_contacto VARCHAR(255),
+    direccion_fisica TEXT,
+    
+    -- Mensajes personalizados
+    mensaje_bienvenida TEXT DEFAULT '¡Hola! Gracias por visitar nuestro catálogo.',
+    mensaje_pedido TEXT DEFAULT 'Hola, quiero hacer el siguiente pedido:',
+    
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ==========================================
+-- 3. USUARIOS (Autenticación - Supabase Auth)
+-- ==========================================
+CREATE TABLE profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100),
+    email VARCHAR(255) NOT NULL,
+    avatar_url TEXT,
+    rol VARCHAR(20) DEFAULT 'admin' CHECK (rol IN ('admin', 'gerente', 'vendedor')),
+    telefono VARCHAR(20),
+    activo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW(),
+    last_login TIMESTAMP
+);
+
+-- ==========================================
+-- 4. CATEGORIAS (Jerarquía opcional futura)
+-- ==========================================
+CREATE TABLE categorias (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    slug VARCHAR(100) NOT NULL,
+    icono VARCHAR(50),
+    color VARCHAR(7),
+    orden INTEGER DEFAULT 0,
+    destacada BOOLEAN DEFAULT false,
+    imagen_url TEXT,
+    activa BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT NOW(),
+    
+    UNIQUE(tenant_id, slug)
+);
+
+-- ==========================================
+-- 5. PRODUCTOS (Entidad central - altamente normalizada)
+-- ==========================================
+CREATE TABLE productos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    categoria_id UUID REFERENCES categorias(id) ON DELETE SET NULL,
+    
+    -- Identificación básica
+    sku VARCHAR(100),
+    nombre VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    descripcion_corta VARCHAR(500),
+    descripcion_larga TEXT,
+    
+    -- Precio (único atributo monetario directo)
+    precio_venta DECIMAL(12,2) NOT NULL,
+    precio_compra DECIMAL(12,2), -- Para calcular márgenes, opcional
+    
+    -- Control de inventario
+    stock_actual INTEGER DEFAULT 0 CHECK (stock_actual >= 0),
+    stock_minimo INTEGER DEFAULT 0,
+    stock_maximo INTEGER,
+    
+    -- Estados
+    estado VARCHAR(20) DEFAULT 'activo' CHECK (estado IN ('activo', 'inactivo', 'agotado', 'descontinuado')),
+    destacado BOOLEAN DEFAULT false,
+    
+    -- SEO y métricas
+    meta_title VARCHAR(70),
+    meta_description VARCHAR(160),
+    vistas INTEGER DEFAULT 0,
+    
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    
+    UNIQUE(tenant_id, sku),
+    UNIQUE(tenant_id, slug)
+);
+
+-- ==========================================
+-- 6. IMAGENES_PRODUCTO (Separado - 1FN, evita arrays)
+-- ==========================================
+CREATE TABLE imagenes_producto (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    producto_id UUID REFERENCES productos(id) ON DELETE CASCADE,
+    url TEXT NOT NULL,
+    alt_text VARCHAR(255),
+    orden INTEGER DEFAULT 0,
+    es_principal BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ==========================================
+-- 7. METODOS_PAGO_CONFIG (NUEVO - Configuración del vendedor)
+-- ==========================================
+CREATE TABLE metodos_pago_tipo (
+    id SERIAL PRIMARY KEY,
+    codigo VARCHAR(20) UNIQUE NOT NULL, -- 'transferencia', 'pago_movil', 'efectivo', 'tarjeta'
+    nombre VARCHAR(50) NOT NULL,
+    icono VARCHAR(50),
+    requiere_datos_bancarios BOOLEAN DEFAULT false,
+    activo BOOLEAN DEFAULT true
+);
+
+-- Seed data para métodos de pago base
+INSERT INTO metodos_pago_tipo (codigo, nombre, icono, requiere_datos_bancarios) VALUES
+('transferencia', 'Transferencia Bancaria', 'building-bank', true),
+('pago_movil', 'Pago Móvil', 'smartphone', true),
+('efectivo', 'Efectivo / Divisas', 'banknote', false),
+('tarjeta', 'Tarjeta de Crédito/Débito', 'credit-card', false),
+('zelle', 'Zelle', 'dollar-sign', true),
+('paypal', 'PayPal', 'wallet', true),
+('binance', 'Binance Pay', 'bitcoin', true),
+('otro', 'Otro método', 'more-horizontal', false);
+
+-- Configuración específica por tenant y método de pago
+CREATE TABLE metodos_pago_config (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    metodo_tipo_id INTEGER REFERENCES metodos_pago_tipo(id),
+    
+    -- Datos específicos del método (normalizados)
+    titulo_display VARCHAR(100), -- "Banco Mercantil" o "Pago Móvil Mercantil"
+    instrucciones TEXT, -- "Transferir a nombre de: Juan Pérez"
+    
+    -- Campos bancarios (solo si aplica)
+    banco_nombre VARCHAR(100),
+    banco_codigo VARCHAR(20),
+    numero_cuenta VARCHAR(50),
+    tipo_cuenta VARCHAR(20), -- 'ahorro', 'corriente', 'cheque'
+    documento_identidad VARCHAR(20), -- CI/RIF/DNI del titular
+    nombre_titular VARCHAR(100),
+    telefono_pago VARCHAR(20), -- Para pago móvil
+    
+    -- Configuración de visualización
+    orden_visualizacion INTEGER DEFAULT 0,
+    activo BOOLEAN DEFAULT true,
+    mostrar_en_catalogo BOOLEAN DEFAULT true,
+    
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    
+    UNIQUE(tenant_id, metodo_tipo_id, banco_nombre, numero_cuenta)
+);
+
+-- ==========================================
+-- 8. OPCIONES_ENTREGA (Configuración de envío/retiro)
+-- ==========================================
+CREATE TABLE opciones_entrega (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    
+    tipo VARCHAR(20) CHECK (tipo IN ('delivery', 'pickup')), -- Separado en tabla propia para escalabilidad
+    
+    nombre VARCHAR(100) NOT NULL, -- "Delivery Caracas", "Retiro en Tienda Centro"
+    descripcion TEXT,
+    costo DECIMAL(10,2) DEFAULT 0,
+    tiempo_estimado VARCHAR(50), -- "24-48 horas", "Inmediato"
+    
+    -- Geolocalización (para delivery)
+    cobertura_tipo VARCHAR(20) DEFAULT 'todas', -- 'todas', 'zonas_especificas', 'radio_km'
+    cobertura_data JSONB, -- {zonas: ['Chacao', 'Baruta'], radio_km: 10}
+    
+    direccion_retiro TEXT, -- Para pickup
+    horario_atencion TEXT, -- "Lun-Vie: 9am-6pm"
+    
+    orden INTEGER DEFAULT 0,
+    activo BOOLEAN DEFAULT true,
+    
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ==========================================
+-- 9. MOVIMIENTOS_STOCK (Auditoría completa - 3FN)
+-- ==========================================
+CREATE TABLE tipos_movimiento (
+    id SERIAL PRIMARY KEY,
+    codigo VARCHAR(20) UNIQUE NOT NULL,
+    nombre VARCHAR(50) NOT NULL,
+    afectacion INTEGER NOT NULL CHECK (afectacion IN (-1, 0, 1)), -- -1: descarga, 1: carga, 0: ajuste
+    descripcion TEXT
+);
+
+INSERT INTO tipos_movimiento (codigo, nombre, afectacion, descripcion) VALUES
+('compra_proveedor', 'Compra a Proveedor', 1, 'Entrada por compra de mercancía'),
+('venta', 'Venta', -1, 'Salida por venta realizada'),
+('devolucion_cliente', 'Devolución de Cliente', 1, 'Entrada por producto devuelto'),
+('devolucion_proveedor', 'Devolución a Proveedor', -1, 'Salida por devolución a proveedor'),
+('mercancia_danada', 'Merma/Daño', -1, 'Salida por producto dañado o vencido'),
+('ajuste_inventario', 'Ajuste de Inventario', 0, 'Corrección de stock'),
+('inventario_inicial', 'Inventario Inicial', 1, 'Carga inicial del sistema');
+
+CREATE TABLE movimientos_stock (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    producto_id UUID REFERENCES productos(id) ON DELETE CASCADE,
+    
+    tipo_movimiento_id INTEGER REFERENCES tipos_movimiento(id),
+    
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    stock_anterior INTEGER NOT NULL,
+    stock_nuevo INTEGER NOT NULL,
+    
+    -- Referencias opcionales para trazabilidad
+    referencia_pedido UUID, -- Si aplica a un pedido específico
+    referencia_documento VARCHAR(100), -- Número de factura, nota, etc.
+    
+    -- Metadatos
+    costo_unitario DECIMAL(10,2), -- Costo al momento del movimiento
+    notas TEXT,
+    
+    -- Auditoría
+    realizado_por UUID REFERENCES profiles(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ==========================================
+-- 10. PEDIDOS (Registro histórico - nueva tabla para trazabilidad)
+-- ==========================================
+CREATE TABLE pedidos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    
+    -- Datos del cliente (denormalizado intencionalmente para histórico inmutable)
+    cliente_nombre VARCHAR(200) NOT NULL,
+    cliente_telefono VARCHAR(20) NOT NULL,
+    cliente_email VARCHAR(255),
+    cliente_direccion TEXT NOT NULL,
+    
+    -- Métodos seleccionados (snapshots en el momento del pedido)
+    metodo_pago_id UUID REFERENCES metodos_pago_config(id),
+    metodo_pago_snapshot JSONB, -- Datos completos del método elegido
+    
+    opcion_entrega_id UUID REFERENCES opciones_entrega(id),
+    opcion_entrega_snapshot JSONB,
+    
+    -- Totales
+    subtotal DECIMAL(12,2) NOT NULL,
+    costo_envio DECIMAL(12,2) DEFAULT 0,
+    descuento DECIMAL(12,2) DEFAULT 0,
+    total DECIMAL(12,2) NOT NULL,
+    
+    -- Estado del pedido
+    estado VARCHAR(20) DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'confirmado', 'preparando', 'enviado', 'entregado', 'cancelado')),
+    notas_cliente TEXT,
+    
+    -- Metadata WhatsApp
+    whatsapp_mensaje_enviado TEXT,
+    whatsapp_enviado_at TIMESTAMP,
+    
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ==========================================
+-- 11. DETALLE_PEDIDO (Items individuales - evita arrays en pedidos)
+-- ==========================================
+CREATE TABLE detalle_pedido (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pedido_id UUID REFERENCES pedidos(id) ON DELETE CASCADE,
+    producto_id UUID REFERENCES productos(id) ON DELETE SET NULL, -- SET NULL para mantener histórico si se borra producto
+    
+    -- Snapshot del producto (inmutable)
+    producto_nombre VARCHAR(255) NOT NULL,
+    producto_sku VARCHAR(100),
+    producto_imagen_url TEXT,
+    
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    precio_unitario DECIMAL(12,2) NOT NULL,
+    subtotal DECIMAL(12,2) NOT NULL,
+    
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ==========================================
+-- 12. ANALYTICS Y EVENTOS (Tracking desnormalizado para performance)
+-- ==========================================
+CREATE TABLE eventos_catalogo (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+    
+    tipo_evento VARCHAR(50) NOT NULL, -- 'vista_producto', 'add_cart', 'inicio_checkout', 'pedido_whatsapp'
+    sesion_id VARCHAR(100), -- Para agrupar acciones del mismo visitante
+    ip_address INET,
+    user_agent TEXT,
+    
+    -- Datos específicos del evento
+    producto_id UUID REFERENCES productos(id),
+    metadata JSONB, -- {cantidad: 2, categoria_id: "uuid", origen: "instagram"}
+    
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Índices optimizados
+CREATE INDEX idx_productos_tenant ON productos(tenant_id);
+CREATE INDEX idx_productos_categoria ON productos(categoria_id);
+CREATE INDEX idx_productos_estado ON productos(estado);
+CREATE INDEX idx_movimientos_producto ON movimientos_stock(producto_id, created_at DESC);
+CREATE INDEX idx_pedidos_tenant ON pedidos(tenant_id, created_at DESC);
+CREATE INDEX idx_eventos_tenant_tipo ON eventos_catalogo(tenant_id, tipo_evento, created_at);
+```
+
+---
+
+### 5.2 Diagrama Entidad-Relación (Texto)
+
+```
+┌─────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│   TENANTS       │────▶│  CONFIGURACIONES    │     │  PROFILES        │
+│  (Negocios)     │     │  (1:1 con tenant)   │     │  (Usuarios)      │
+└────────┬────────┘     └─────────────────────┘     └──────────────────┘
+         │
+         │ 1:N
+         ▼
+┌─────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
+│   CATEGORIAS    │◄────│    PRODUCTOS        │────▶│ IMAGENES_PRODUCTO│
+│                 │     │                     │     │  (1:N con prod)  │
+└─────────────────┘     └──────────┬──────────┘     └──────────────────┘
+                                   │
+                                   │ 1:N (audit)
+                                   ▼
+                          ┌─────────────────┐
+                          │ MOVIMIENTOS_STOCK│
+                          │  (Histórico)     │
+                          └─────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CONFIGURACIÓN DE PAGOS Y ENVÍOS                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│  TENANTS ◄──── METODOS_PAGO_CONFIG ◄──── METODOS_PAGO_TIPO (catálogo)  │
+│      │                                                                   │
+│      └────► OPCIONES_ENTREGA (Delivery/Pickup configurables)            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         FLUJO DE PEDIDOS                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│  PEDIDOS ◄──── DETALLE_PEDIDO (items individuales)                      │
+│     │                                                                   │
+│     └────► Referencia a: METODOS_PAGO_CONFIG (snapshot guardado)        │
+│     └────► Referencia a: OPCIONES_ENTREGA (snapshot guardado)           │
+│     └────► Desencadena: MOVIMIENTOS_STOCK (tipo 'venta')                │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 5.3 Flujo de Configuración de Métodos de Pago (Nuevo Módulo)
+
+#### **UI del Panel de Configuración:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  CONFIGURACIÓN > MÉTODOS DE PAGO                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  [+ Agregar Método de Pago]                                 │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 💳 Transferencia Bancaria                    [Editar]│   │
+│  │    Banco Mercantil - Cuenta: ****4523               │   │
+│  │    Titular: Juan Pérez | CI: V-12.345.678           │   │
+│  │    [Activo] [Mostrar en catálogo ✓]                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 📱 Pago Móvil                                 [Editar]│   │
+│  │    Mercantil - Tel: 0412-123.45.67                  │   │
+│  │    Titular: Juan Pérez | CI: V-12.345.678           │   │
+│  │    [Activo] [Mostrar en catálogo ✓]                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 💵 Efectivo / Divisas                         [Editar]│   │
+│  │    Pago contra entrega en tienda o delivery         │   │
+│  │    [Activo] [Mostrar en catálogo ✓]                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### **Modal: Agregar/Editar Método de Pago:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Configurar Método de Pago                                  │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Tipo de Método *                                           │
+│  [Transferencia Bancaria ▼]                                 │
+│                                                             │
+│  Nombre Personalizado *                                     │
+│  [Transferencia Banco Mercantil                    ]        │
+│                                                             │
+│  ─── Campos específicos para Transferencia ───              │
+│                                                             │
+│  Banco *              [Banco Mercantil             ]        │
+│  Número de Cuenta *   [0102-****-****-****-4523    ]        │
+│  Tipo de Cuenta *     [Corriente ▼]                         │
+│  Nombre del Titular * [Juan Pérez                  ]        │
+│  Documento ID *       [V-12345678                  ]        │
+│                                                             │
+│  Instrucciones para el cliente:                             │
+│  [Realizar transferencia y enviar capture por WhatsApp]     │
+│                                                             │
+│  [✓] Mostrar este método en el catálogo público             │
+│  [✓] Activo                                                 │
+│                                                             │
+│              [Cancelar]  [Guardar Método de Pago]           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 5.4 Integración en el Checkout del Cliente
+
+#### **Paso 2 del Formulario (Actualizado):**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  2. Método de Pago y Entrega                                │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  💳 Selecciona tu método de pago:                           │
+│                                                             │
+│  (•) Transferencia Banco Mercantil                          │
+│      └─► Titular: Juan Pérez | Cuenta: ****4523             │
+│                                                             │
+│  ( ) Pago Móvil Mercantil                                   │
+│      └─► 0412-123.45.67 | Titular: Juan Pérez               │
+│                                                             │
+│  ( ) Efectivo contra entrega                                │
+│                                                             │
+│  ─────────────────────────────────────────────────────────  │
+│                                                             │
+│  🚚 Método de entrega:                                      │
+│                                                             │
+│  (•) Delivery a domicilio ($2.00)                           │
+│  ( ) Retiro en tienda (Gratis)                              │
+│      Dirección: Av. Principal #123, Local 5                 │
+│                                                             │
+│  [Continuar]                                                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### **Generación del Mensaje WhatsApp (Actualizado):**
+
+El mensaje generado ahora incluye automáticamente los datos de pago seleccionados:
+
+```
+¡Hola! 👋 Soy *Mariana González* y quiero hacer un pedido:
+
+📦 *PRODUCTOS:*
+• Martillo Carpintero 16oz - 1x $15.00
+• Cinta Métrica 5m - 2x $8.00 c/u
+• Set Destornilladores - 1x $25.00
+
+💰 *SUBTOTAL: $56.00*
+🚚 *ENVÍO: $2.00*
+💵 *TOTAL A PAGAR: $58.00*
+
+═══════════════════════════════════════
+
+💳 *MÉTODO DE PAGO:* Transferencia Banco Mercantil
+   Banco: Mercantil
+   Cuenta: 0102-****-****-****-4523
+   Titular: Juan Pérez
+   Documento: V-12345678
+
+🚚 *MÉTODO DE ENTREGA:* Delivery a domicilio
+📍 *DIRECCIÓN:* Urb. Las Acacias, Calle 5, Casa 123, Caracas
+📱 *TELÉFONO:* 0414-987.65.43
+
+📝 *NOTAS:* Favor llamar antes de llegar
+
+═══════════════════════════════════════
+
+Adjunto capture de la transferencia. ¿Confirman disponibilidad? 🙏
+```
+
+---
+
+### 5.5 Políticas de Seguridad (RLS) Actualizadas
+
+```sql
+-- Política: Usuarios solo ven métodos de pago de su tenant
+CREATE POLICY "tenant_isolation_metodos_pago" ON metodos_pago_config
+    FOR ALL USING (tenant_id IN (
+        SELECT tenant_id FROM profiles WHERE id = auth.uid()
+    ));
+
+-- Política: Datos bancarios nunca se exponen en API pública
+-- El backend filtra campos sensibles (numero_cuenta completo) 
+-- antes de enviar al frontend del catálogo público
+
+-- Vista segura para catálogo público (solo datos necesarios)
+CREATE VIEW metodos_pago_publicos AS
+SELECT 
+    id,
+    tenant_id,
+    titulo_display,
+    instrucciones,
+    banco_nombre,
+    CONCAT('****', RIGHT(numero_cuenta, 4)) as numero_cuenta_mask,
+    tipo_cuenta,
+    documento_identidad,
+    nombre_titular,
+    telefono_pago
+FROM metodos_pago_config
+WHERE activo = true AND mostrar_en_catalogo = true;
+```
+
+---
+
+### 5.6 Validaciones de Negocio
+
+| Regla | Implementación |
+|-------|---------------|
+| Mínimo 1 método de pago activo | Trigger en BD o validación en backend |
+| No eliminar método con pedidos pendientes | Constraint con contador de pedidos |
+| Masking de datos bancarios | Función SQL o lógica en API |
+| Unicidad de cuenta por tenant | Constraint UNIQUE compuesto |
+| Orden de visualización | Campo `orden_visualizacion` editable por drag-drop |
+
+---
+
+¿Deseas que profundice en algún aspecto específico de la normalización, en la implementación del frontend para la configuración de pagos, o en la lógica de generación del mensaje de WhatsApp con los datos bancarios?
