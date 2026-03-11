@@ -224,7 +224,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
-               <ResponsiveContainer width="100%" height="100%">
+               <ResponsiveContainer width="100%" height="100%" minHeight={1}>
                  <LineChart data={data.timeSeries} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
@@ -249,7 +249,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
-               <ResponsiveContainer width="100%" height="100%">
+               <ResponsiveContainer width="100%" height="100%" minHeight={1}>
                  <BarChart layout="vertical" data={data.topProducts} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                    <XAxis type="number" hide />
