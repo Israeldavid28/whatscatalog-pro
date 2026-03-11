@@ -14,11 +14,11 @@ export async function POST(req: Request) {
     }
 
     // 1. Fetch Tenant token
-    const { data: tenantData } = await (supabaseServer
-      .from("tenants" as any)
+    const { data: tenantData } = await (supabaseServer as any)
+      .from("tenants")
       .select("id, domain_verification_token")
       .eq("custom_domain", domain)
-      .single() as any)
+      .single()
 
     const tenant = tenantData as any
 
@@ -47,10 +47,10 @@ export async function POST(req: Request) {
 
     if (isVerified) {
       // 4. Update status
-      const { error: updateError } = await (supabaseServer
-        .from("tenants" as any)
-        .update({ domain_verified: true } as any)
-        .eq("id", tenant.id) as any)
+      const { error: updateError } = await (supabaseServer as any)
+        .from("tenants")
+        .update({ domain_verified: true })
+        .eq("id", tenant.id)
 
       if (updateError) throw updateError
 

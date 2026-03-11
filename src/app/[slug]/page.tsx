@@ -1,17 +1,16 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 
+import { supabase } from "@/lib/supabase"
 import PublicCatalog from "@/components/public/PublicCatalog"
 
-export default async function CatalogPage({ params }: { params: { slug: string } }) {
-  const supabase = createServerComponentClient({ cookies })
+export default async function CatalogPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
 
   // 1. Fetch Tenant
   const { data: tenant } = await supabase
     .from("tenants")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single()
 
   if (!tenant) {

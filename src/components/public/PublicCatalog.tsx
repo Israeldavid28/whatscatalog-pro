@@ -1,3 +1,5 @@
+"use client"
+
 import { useMemo, useState, useEffect } from "react"
 import { Search, ShoppingCart, Info, Loader2 } from "lucide-react"
 

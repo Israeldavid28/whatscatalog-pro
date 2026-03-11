@@ -29,7 +29,7 @@ export default function DominioConfigForm() {
       const { data } = await supabase
         .from("tenants")
         .select("*")
-        .eq("id", profile.tenant_id)
+        .eq("id", profile!.tenant_id)
         .single()
       
       setTenant(data)
@@ -53,7 +53,7 @@ export default function DominioConfigForm() {
           domain_verification_token: token,
           domain_verified: false 
         })
-        .eq("id", profile.tenant_id)
+        .eq("id", profile!.tenant_id)
 
       if (error) throw error
       

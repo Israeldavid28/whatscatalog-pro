@@ -7,9 +7,9 @@ export default async function CatalogLayout({
   params,
 }: {
   children: React.ReactNode
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }) {
-  const { slug } = params
+  const { slug } = await params
 
   const { data: tenant } = await supabase
     .from("tenants")

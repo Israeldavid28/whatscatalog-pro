@@ -22,12 +22,15 @@ interface CartSheetProps {
 }
 
 export function CartSheet({ businessName, businessPhone, currency }: CartSheetProps) {
-  const { items, removeItem, updateQuantity, total } = useCartStore()
-  const itemCount = items.reduce((acc, item) => acc + item.quantity, 0)
+  const items = useCartStore((s) => s.items)
+  const removeItem = useCartStore((s) => s.removeItem)
+  const updateQuantity = useCartStore((s) => s.updateQuantity)
+  const total = useCartStore((s) => s.totalPrice())
+  const itemCount = useCartStore((s) => s.totalItems())
 
   const handleCheckout = () => {
     const message = `Hola ${businessName}, me gustaría realizar un pedido:\n\n` +
-      items.map(item => `- ${item.product.name} x${item.quantity} (${currency} ${(item.product.price * item.quantity).toFixed(2)})`).join("\n") +
+      items.map(item => `- ${item.name} x${item.quantity} (${currency} ${(item.price * item.quantity).toFixed(2)})`).join("\n") +
       `\n\n*Total: ${currency} ${total.toFixed(2)}*`
 
     const encodedMessage = encodeURIComponent(message)
@@ -66,10 +69,10 @@ export function CartSheet({ businessName, businessPhone, currency }: CartSheetPr
             <ScrollArea className="flex-1 -mx-6 px-6">
               <div className="space-y-4 py-4">
                 {items.map((item) => (
-                  <div key={item.product.id} className="flex gap-4">
+                  <div key={item.id} className="flex gap-4">
                     <div className="h-16 w-16 rounded-md bg-muted overflow-hidden shrink-0">
-                      {item.product.images?.[0] ? (
-                        <img src={item.product.images[0]} alt={item.product.name} className="h-full w-full object-cover" />
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
                       ) : (
                         <div className="h-full w-full flex items-center justify-center">
                           <ShoppingBag className="h-6 w-6 text-muted-foreground" />
@@ -77,16 +80,16 @@ export function CartSheet({ businessName, businessPhone, currency }: CartSheetPr
                       )}
                     </div>
                     <div className="flex-1 space-y-1">
-                      <h4 className="text-sm font-medium leading-tight">{item.product.name}</h4>
+                      <h4 className="text-sm font-medium leading-tight">{item.name}</h4>
                       <p className="text-sm font-bold text-primary">
-                        {currency} {item.product.price.toFixed(2)}
+                        {currency} {item.price.toFixed(2)}
                       </p>
                       <div className="flex items-center gap-2 pt-1">
                         <Button
                           variant="outline"
                           size="icon"
                           className="h-7 w-7 rounded-full"
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
@@ -95,7 +98,7 @@ export function CartSheet({ businessName, businessPhone, currency }: CartSheetPr
                           variant="outline"
                           size="icon"
                           className="h-7 w-7 rounded-full"
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
@@ -103,7 +106,7 @@ export function CartSheet({ businessName, businessPhone, currency }: CartSheetPr
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 ml-auto text-destructive"
-                          onClick={() => removeItem(item.product.id)}
+                          onClick={() => removeItem(item.id)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>

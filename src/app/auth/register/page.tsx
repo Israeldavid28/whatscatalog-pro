@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2, Store, Lock, Mail, ArrowRight } from "lucide-react"
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { supabase } from "@/lib/supabase"
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
@@ -40,9 +41,7 @@ export default function RegisterPage() {
       if (authError) throw authError
       if (!authData.user) throw new Error("No user data returned")
 
-      // 2. Create Tenant (The trigger will handle the profile creation if we set it up in DB, 
-      // but here we do it manually to ensure tenant_id is linked)
-      
+      // 2. Create Tenant
       const { data: tenant, error: tenantError } = await supabase
         .from("tenants")
         .insert({
@@ -59,10 +58,7 @@ export default function RegisterPage() {
 
       if (tenantError) throw tenantError
 
-      // 3. Update Profile (Profile created by trigger, find it and update)
-      // Since it's a new user, RLS might prevent us from updating immediately 
-      // depending on how we set up the DB. Assuming we have permissions for our own profile.
-      
+      // 3. Update Profile
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -151,5 +147,17 @@ export default function RegisterPage() {
          </p>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full items-center justify-center bg-slate-50">
+        <Loader2 className="animate-spin h-8 w-8 text-primary" />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   )
 }
