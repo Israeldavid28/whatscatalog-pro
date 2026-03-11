@@ -65,7 +65,8 @@ export async function middleware(req: NextRequest) {
   // Identificar si estamos en el dominio principal (opcional: configurar como env var)
   const isMainAppDomain = hostname === process.env.NEXT_PUBLIC_MAIN_DOMAIN || 
                            hostname.includes('localhost') || 
-                           hostname === 'whatscatalog.pro';
+                           hostname === 'whatscatalog.pro' ||
+                           hostname.endsWith('.vercel.app');
 
   // 2. Identificar Tenant
   let tenantId = '';
