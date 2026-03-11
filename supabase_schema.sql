@@ -29,8 +29,8 @@ CREATE TABLE IF NOT EXISTS public.categories (
     tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
-    sort_order INTEGER DEFAULT 0,
-    is_active BOOLEAN DEFAULT true
+    orden INTEGER DEFAULT 0,
+    active BOOLEAN DEFAULT true
 );
 
 -- 4. Products
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS public.products (
     price NUMERIC(12,2) NOT NULL DEFAULT 0.00,
     stock INTEGER DEFAULT 0,
     images TEXT[] DEFAULT '{}',
-    is_active BOOLEAN DEFAULT true,
+    active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
