@@ -55,12 +55,12 @@ export default function AdminDashboard() {
         supabase.from("pedidos").select("*").eq("tenant_id", tId).order("created_at", { ascending: false }).limit(5)
       ])
 
-      const orders = ordersRes.data || []
+      const orders = (ordersRes.data as any[]) || []
       const totalSales = orders
-        .filter(o => o.estado !== "cancelado")
-        .reduce((acc, current) => acc + current.total, 0)
+        .filter((o: any) => o.estado !== "cancelado")
+        .reduce((acc, current: any) => acc + current.total, 0)
       
-      const pendingCount = orders.filter(o => o.estado === "pendiente").length
+      const pendingCount = orders.filter((o: any) => o.estado === "pendiente").length
 
       setStats({
         totalOrders: orders.length,

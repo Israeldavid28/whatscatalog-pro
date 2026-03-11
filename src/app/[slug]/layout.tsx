@@ -11,7 +11,7 @@ export default async function CatalogLayout({
 }) {
   const { slug } = await params
 
-  const { data: tenant } = await supabase
+  const { data: tenant } = await (supabase as any)
     .from("tenants")
     .select("*")
     .eq("slug", slug)

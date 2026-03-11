@@ -69,16 +69,22 @@ export default function AnalyticsPage() {
     try {
       setLoading(true)
       const tId = profile?.tenant_id
+      if (!tId) {
+        setLoading(false)
+        return
+      }
+      
       const days = period === "7d" ? 7 : period === "30d" ? 30 : 1
       const startDate = subDays(new Date(), days).toISOString()
 
-      const { data: events, error } = await supabase
+      const { data: rawEvents, error } = await (supabase as any)
         .from("eventos_catalogo")
         .select("*, products(name)")
         .eq("tenant_id", tId)
         .gte("created_at", startDate)
 
       if (error) throw error
+      const events = rawEvents as any[]
 
       // Process Time Series
       const daysArray = Array.from({ length: days }, (_, i) => {

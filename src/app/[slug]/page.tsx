@@ -7,7 +7,7 @@ export default async function CatalogPage({ params }: { params: Promise<{ slug: 
   const { slug } = await params
 
   // 1. Fetch Tenant
-  const { data: tenant } = await supabase
+  const { data: tenant } = await (supabase as any)
     .from("tenants")
     .select("*")
     .eq("slug", slug)
@@ -18,14 +18,14 @@ export default async function CatalogPage({ params }: { params: Promise<{ slug: 
   }
 
   // 2. Fetch Categories (sorted)
-  const { data: categories } = await supabase
+  const { data: categories } = await (supabase as any)
     .from("categories")
     .select("*")
     .eq("tenant_id", tenant.id)
     .order("orden")
 
   // 3. Fetch Products (active only)
-  const { data: products } = await supabase
+  const { data: products } = await (supabase as any)
     .from("products")
     .select("*")
     .eq("tenant_id", tenant.id)
