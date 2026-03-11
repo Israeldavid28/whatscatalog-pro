@@ -71,4 +71,9 @@ SaaS para gestión de catálogos digitales por WhatsApp. Permite a los negocios 
 - **Admin**: Dashboard funcional con gestión de productos, categorías, pedidos (estados) y settings del negocio.
 - **Public**: Catálogo premium con carrito persistente y checkout automatizado a WhatsApp.
 - **Seguridad**: Políticas RLS configuradas para aislamiento de datos entre tiendas y acceso público limitado al catálogo.
-- **Próximo Paso (Fase 2)**: Dominios personalizados, Analytics avanzado y optimización de rendimiento.
+---
+**Actualización (Inicio Fase 2):**
+- **Deployment**: Código subido exitosamente a GitHub (`Israeldavid28/whatscatalog-pro`) para despliegue automático en Vercel.
+- **Custom Domains**: Implementación inicial de dominios personalizados con middleware de resolución de tenants y API de verificación vía DNS TXT.
+- **Seguridad**: Reforzamiento de políticas RLS y anonimización de estructuras sensibles en el frontend.
+- **Próximo Paso**: Dashboard de Analytics y movimientos de inventario auditables.

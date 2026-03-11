@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 import CartSidebar from "@/components/public/CartSidebar"
+import { trackEvent } from "@/lib/analytics"
 
 interface CatalogProps {
   tenant: Tenant
@@ -114,7 +115,10 @@ export default function PublicCatalog({ tenant, products, categories }: CatalogP
 
              return (
                <div key={p.id} className="group relative overflow-hidden rounded-xl border bg-white transition hover:shadow-md h-[280px] sm:h-[320px] flex flex-col">
-                  <div className="aspect-square w-full overflow-hidden bg-muted cursor-pointer" onClick={() => setSelectedProduct(p)}>
+                  <div className="aspect-square w-full overflow-hidden bg-muted cursor-pointer" onClick={() => {
+                    setSelectedProduct(p)
+                    trackEvent(tenant.id, "vista_producto", p.id)
+                  }}>
                     {mainImage ? (
                       <img src={mainImage} alt={p.name} className="h-full w-full object-cover transition duration-300 group-hover:scale-110" />
                     ) : (
@@ -134,13 +138,16 @@ export default function PublicCatalog({ tenant, products, categories }: CatalogP
                       <span className="text-sm font-bold sm:text-lg" style={{ color: primaryColor }}>
                         {settings.currency || '$'} {p.price}
                       </span>
-                      <Button size="icon" className="h-8 w-8 rounded-full sm:h-9 sm:w-9" style={{ backgroundColor: primaryColor }} onClick={() => addItem({
-                        id: p.id,
-                        name: p.name,
-                        price: p.price,
-                        quantity: 1,
-                        image: mainImage || undefined
-                      })}>
+                      <Button size="icon" className="h-8 w-8 rounded-full sm:h-9 sm:w-9" style={{ backgroundColor: primaryColor }} onClick={() => {
+                        addItem({
+                          id: p.id,
+                          name: p.name,
+                          price: p.price,
+                          quantity: 1,
+                          image: mainImage || undefined
+                        })
+                        trackEvent(tenant.id, "add_cart", p.id)
+                      }}>
                         <ShoppingCart className="h-4 w-4" />
                       </Button>
                     </div>
@@ -189,14 +196,15 @@ export default function PublicCatalog({ tenant, products, categories }: CatalogP
                  </div>
               </div>
               <Button className="w-full h-12 gap-2" disabled={selectedProduct.stock <= 0} style={{ backgroundColor: primaryColor }} onClick={() => {
-                 addItem({
-                   id: selectedProduct.id,
-                   name: selectedProduct.name,
-                   price: selectedProduct.price,
-                   quantity: 1,
-                   image: selectedProduct.images?.[0]
-                 })
-                 setSelectedProduct(null)
+                  addItem({
+                    id: selectedProduct.id,
+                    name: selectedProduct.name,
+                    price: selectedProduct.price,
+                    quantity: 1,
+                    image: selectedProduct.images?.[0]
+                  })
+                  trackEvent(tenant.id, "add_cart", selectedProduct.id)
+                  setSelectedProduct(null)
               }}>
                  Agregar al Carrito
               </Button>

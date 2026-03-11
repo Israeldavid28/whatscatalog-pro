@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { supabase } from "@/lib/supabase"
+import { trackEvent } from "@/lib/analytics"
 
 interface CartSidebarProps {
   tenant: Tenant
@@ -317,7 +318,10 @@ export default function CartSidebar({ tenant, open, onOpenChange }: CartSidebarP
               </div>
 
               {step === "cart" ? (
-                <Button className="w-full h-12" disabled={items.length === 0} style={{ backgroundColor: primaryColor }} onClick={() => setStep("checkout")}>
+                <Button className="w-full h-12" disabled={items.length === 0} style={{ backgroundColor: primaryColor }} onClick={() => {
+                  setStep("checkout")
+                  trackEvent(tenant.id, "inicio_checkout")
+                }}>
                    Continuar al Pago
                 </Button>
               ) : (

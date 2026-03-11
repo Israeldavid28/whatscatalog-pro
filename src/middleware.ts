@@ -1,61 +1,117 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+  let res = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          req.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          res = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          })
+          res.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          req.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          res = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          })
+          res.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
 
   // 1. Refresh session if exists
   const { data: { session } } = await supabase.auth.getSession()
 
   const url = req.nextUrl
-  const hostname = req.headers.get('host') || ''
-  
-  // Define main domain (ignore if it's localhost or the app domain)
-  const isMainDomain = hostname === process.env.NEXT_PUBLIC_MAIN_DOMAIN || 
-                       hostname.includes('localhost') || 
-                       hostname === 'whatscatalog.pro'
+  const host = req.headers.get('host') || '';
+  const hostname = host.split(':')[0];
 
-  // 2. Identify Tenant
-  let tenantId = ''
-  
-  // Try to find by Custom Domain first
-  const { data: domainTenant } = await supabase
+  // Identificar si estamos en el dominio principal (opcional: configurar como env var)
+  const isMainAppDomain = hostname === process.env.NEXT_PUBLIC_MAIN_DOMAIN || 
+                           hostname.includes('localhost') || 
+                           hostname === 'whatscatalog.pro';
+
+  // 2. Identificar Tenant
+  let tenantId = '';
+
+  // a. Intentar por Dominio Personalizado (Verificado)
+  const { data: tenantByDomain } = await supabase
     .from('tenants')
     .select('id')
     .eq('custom_domain', hostname)
-    .single()
+    .eq('domain_verified', true)
+    .single();
 
-  if (domainTenant) {
-    tenantId = domainTenant.id
-  } else {
-    // Subdomain or Slug logic
-    let slug = ''
-    if (isMainDomain) {
-      const segments = url.pathname.split('/')
-      if (segments[1] && !['admin', 'api', '_next', 'static', 'auth', 'login', 'unauthorized'].includes(segments[1])) {
-        slug = segments[1]
-      }
-    } else {
-      slug = hostname.split('.')[0]
+  if (tenantByDomain) {
+    tenantId = tenantByDomain.id;
+  } else if (!isMainAppDomain) {
+    // b. No es el dominio principal, intentar por Subdominio (ej: tienda.plataforma.com)
+    const subdomain = hostname.split('.')[0];
+    const { data: tenantBySlug } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('slug', subdomain)
+      .single();
+    
+    if (tenantBySlug) {
+      tenantId = tenantBySlug.id;
     }
+  } else {
+    // c. Es el dominio principal, revisar si hay un slug en la ruta (ej: plataforma.com/tienda1)
+    const segments = url.pathname.split('/');
+    const potentialSlug = segments[1];
 
-    if (slug) {
-      const { data: slugTenant } = await supabase
+    if (potentialSlug && !['admin', 'api', '_next', 'static', 'auth', 'login', 'unauthorized'].includes(potentialSlug)) {
+      const { data: tenantByPathSlug } = await supabase
         .from('tenants')
         .select('id')
-        .eq('slug', slug)
-        .single()
+        .eq('slug', potentialSlug)
+        .single();
       
-      if (slugTenant) {
-        tenantId = slugTenant.id
+      if (tenantByPathSlug) {
+        tenantId = tenantByPathSlug.id;
       }
     }
   }
 
   if (tenantId) {
-    res.headers.set('x-tenant-id', tenantId)
+    res.headers.set('x-tenant-id', tenantId);
   }
 
   // 3. Admin protection
